@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: eve_diagnostic_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: diagnostic_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d diagnostic_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eve_diagnostic_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/diagnostic_db?schema=public"
+      JWT_SECRET: "eve-healthcare-sde-assignment-production-super-secret-key-32chars"
+      JWT_EXPIRES_IN: "24h"
+      WEBHOOK_SECRET: "whsec_eve_diagnostic_mock_secret_key"
+    ports:
+      - "5000:5000"
+
+volumes:
+  postgres_data:

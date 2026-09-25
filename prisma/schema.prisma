@@ -1,0 +1,138 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bookings     Booking[]
+
+  @@map("users")
+}
+
+model DiagnosticCentre {
+  id           String    @id @default(uuid())
+  name         String
+  location     String
+  city         String
+  contactPhone String?
+  email        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  centreTests  CentreTest[]
+  bookings     Booking[]
+
+  @@map("diagnostic_centres")
+}
+
+model DiagnosticTest {
+  id             String    @id @default(uuid())
+  name           String
+  category       String
+  description    String?
+  sampleRequired String?
+  turnaroundTime String?
+  basePrice      Float     @default(0.0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  centreTests    CentreTest[]
+  bookings       Booking[]
+
+  @@map("diagnostic_tests")
+}
+
+model CentreTest {
+  id          String           @id @default(uuid())
+  centreId    String
+  testId      String
+  price       Float
+  isAvailable Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  centre      DiagnosticCentre @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  test        DiagnosticTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([centreId, testId])
+  @@map("centre_tests")
+}
+
+model Booking {
+  id              String           @id @default(uuid())
+  userId          String
+  centreId        String
+  testId          String
+  appointmentDate DateTime
+  amount          Float
+  status          BookingStatus    @default(PENDING)
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  centre          DiagnosticCentre @relation(fields: [centreId], references: [id], onDelete: Restrict)
+  test            DiagnosticTest   @relation(fields: [testId], references: [id], onDelete: Restrict)
+  payments        Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  bookingId     String
+  amount        Float
+  status        PaymentStatus
+  transactionId String        @unique
+  paymentMethod String        @default("MOCK_GATEWAY")
+  rawResponse   Json?
+  createdAt     DateTime      @default(now())
+
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("payments")
+}
+
+model WebhookEvent {
+  eventId     String    @id
+  eventType   String
+  bookingId   String?
+  status      String
+  payload     Json
+  processedAt DateTime  @default(now())
+
+  @@map("webhook_events")
+}
