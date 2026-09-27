@@ -8,8 +8,6 @@
 [![Swagger](https://img.shields.io/badge/Swagger-OpenAPI%203.0-brightgreen.svg)](http://localhost:5000/api-docs)
 [![Tests](https://img.shields.io/badge/Tests-36%20Passed-success.svg)](https://jestjs.io/)
 
-A robust, production-grade backend service built for **EVE Healthcare** to manage diagnostic centres, test offerings, patient bookings, simulated payment processing, and **strictly idempotent payment webhooks**.
-
 ---
 
 ## Table of Contents
@@ -425,25 +423,3 @@ The database seed provides ready-to-test accounts:
 | **Patient** | `patient@evehealthcare.com` | `Password123` | Pre-loaded with a pending booking for testing payments. |
 | **Admin** | `admin@evehealthcare.com` | `AdminPassword123` | Has permissions to manage centres and tests. |
 
----
-
-## 10. Assumptions Made
-
-1. **Authoritative Pricing**: Test prices may vary per diagnostic centre, but the booking price is strictly computed and locked server-side at booking creation time to prevent client-side price tampering.
-2. **Booking Lifecycle State Machine**:
-   - `PENDING` ➔ Can transition to `CONFIRMED` (on payment success), `FAILED` (on payment failure), or `CANCELLED` (user cancellation).
-   - `CONFIRMED` ➔ Cannot be paid again. Can be cancelled by the patient if required.
-   - `CANCELLED` ➔ Terminal for payments; cannot be paid.
-   - `FAILED` ➔ Cannot be cancelled.
-3. **Idempotency Boundary**: A payment gateway's unique `eventId` represents an atomic event. If an `eventId` was already processed, returning `200 OK` with an idempotent bypass payload satisfies the gateway contract without causing side effects.
-4. **Direct Route Compatibility**: In addition to standard REST `/api/payments/`, routes are also bound directly to `/payments/` and `/payments/webhook/` to match the assignment prompt explicitly.
-
----
-
-## 11. What Would Be Improved With More Time
-
-1. **Distributed Locks (Redis / Redlock)**: For multi-instance clustered backends, adding distributed locking around concurrent webhook deliveries with the same `eventId` before DB transactions.
-2. **Asynchronous Message Queue (BullMQ / RabbitMQ)**: Decoupling booking confirmation emails/SMS and invoice generation from the synchronous HTTP payment webhook handler.
-3. **Webhook HMAC Signature Verification**: Enforcing cryptographic signatures (`x-webhook-signature` using `crypto.createHmac`) against a shared secret to prevent spoofed webhook events.
-4. **Time Slot Capacity Management**: Enforcing maximum concurrent appointments per time slot (e.g., maximum 5 patients per 30-minute window at a diagnostic centre).
-5. **Soft Deletes & Audit Log**: Adding `deletedAt` soft deletes and an audit history table for tracking state changes.

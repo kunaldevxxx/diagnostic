@@ -4,7 +4,7 @@ export const swaggerDocument = {
     title: 'EVE Healthcare — Diagnostic Test Booking & Payment Service',
     version: '1.0.0',
     description:
-      'Production-grade REST API backend service for diagnostic centre management, test bookings, simulated payments, and idempotent payment webhooks.',
+      '',
     contact: {
       name: 'EVE Healthcare Backend Team',
     },
