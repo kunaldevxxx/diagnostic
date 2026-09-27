@@ -163,41 +163,8 @@ erDiagram
 
 ---
 
-## 4. Idempotent Webhook Architecture
 
-Payment providers (Stripe, Razorpay, Cashfree) guarantee *at-least-once* delivery. Network timeouts or delayed ACKs often cause identical events to be retried multiple times.
-
-### Idempotency Flow
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Gateway as Payment Gateway
-    participant API as Webhook Endpoint
-    participant DB as PostgreSQL (Prisma)
-
-    Gateway->>API: POST /payments/webhook/ (eventId: "evt_101", status: "SUCCESS")
-    API->>DB: Query WebhookEvent WHERE eventId = "evt_101"
-    
-    alt Event Already Processed (Duplicate Delivery)
-        DB-->>API: Record found (processedAt: 10:00:00)
-        API-->>Gateway: 200 OK { isDuplicate: true, status: "ignored", message: "Event already processed" }
-        Note over API,DB: No duplicate payment created; booking state unchanged.
-    else New Event (First Delivery)
-        DB-->>API: Not found
-        API->>DB: BEGIN TRANSACTION
-        API->>DB: Check Booking status
-        API->>DB: Update Booking status -> CONFIRMED
-        API->>DB: INSERT into Payment (transactionId, status: SUCCESS)
-        API->>DB: INSERT into WebhookEvent (eventId: "evt_101", status: PROCESSED)
-        API->>DB: COMMIT TRANSACTION
-        API-->>Gateway: 200 OK { isDuplicate: false, status: "processed" }
-    end
-```
-
----
-
-## 5. Quick Start & Local Setup
+## 4. Quick Start & Local Setup
 
 ### Option A: Docker & Docker Compose (Recommended)
 
@@ -250,7 +217,7 @@ The server will start at: `http://localhost:5000`
 
 ---
 
-## 6. Interactive React Demo Dashboard
+## 5. Interactive React Demo Dashboard
 
 To visually demo diagnostic bookings, test selection, payment simulation, and duplicate webhook idempotency:
 
@@ -269,7 +236,7 @@ Open **`http://localhost:3000`** in your browser:
 
 ---
 
-## 7. Running Automated Tests
+## 6. Running Automated Tests
 
 A comprehensive test suite of **36 unit and integration tests** is included using Jest and Supertest.
 
@@ -286,7 +253,7 @@ npm test
 
 ---
 
-## 8. API Endpoints & Example Requests
+## 7. API Endpoints & Example Requests
 
 Interactive Swagger UI is accessible at: **`http://localhost:5000/api-docs`**
 
@@ -414,7 +381,7 @@ Executing the exact same `curl` command above a second time returns:
 
 ---
 
-## 9. Pre-Seeded Demo Credentials
+## 8. Pre-Seeded Demo Credentials
 
 The database seed provides ready-to-test accounts:
 
